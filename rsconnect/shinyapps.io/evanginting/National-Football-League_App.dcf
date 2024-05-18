@@ -1,0 +1,12 @@
+name: National-Football-League_App
+title: National-Football-League_App
+username: evanginting
+account: evanginting
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 9660649
+bundleId: 7608957
+url: https://evanginting.shinyapps.io/National-Football-League_App/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

@@ -1,0 +1,204 @@
+---
+title: "Untitled"
+author: "Evan Hadinata Ginting"
+date: "2023-08-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+```
+
+
+```{r}
+attendance <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/attendance.csv')
+standings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/standings.csv')
+games <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/games.csv')
+
+```
+Data cleansing
+```{r}
+glimpse(attendance)
+```
+```{r}
+attendance <- attendance %>%
+                mutate(full_name = paste(team, team_name, sep = " "))
+
+att_summ <- attendance %>%
+              group_by(year) %>%
+              summarise(total = mean(total),
+                        home = mean(home))
+```
+
+
+
+```{r}
+#glimpse(games)
+#trimws(games$week)
+
+games_td <- games %>%
+              filter(!week %in% c("WildCard", "Division", "ConfChamp", "SuperBowl")) %>%
+              mutate(week = as.double(week))
+
+glimpse(games_td)
+```
+
+
+```{r}
+complete_NFL <- left_join(games_td, attendance, by = c("year", "week", "home_team_city" = "team", "home_team_name" = "team_name"))
+```
+
+
+```{r}
+write.csv(complete_NFL, file = "complete_NFL.csv")
+```
+
+
+Data Wrangling Process
+```{r}
+complete_NFL %>%
+  mutate(home_team_refer = paste(home_team_city, home_team_name, sep = " "),
+         away_team_refer = paste(away_team_city, away_team_name, sep = " "),
+         home_away = ifelse(home_team == home_team_refer, "Home", 
+                            ifelse(away_team == away_team_refer, "Away", "Others"))) 
+#%>%
+#  write.csv(file = "complete_NFL_test.csv")
+```
+
+
+# Total Weekly Attendance
+```{r}
+complete_NFL %>%
+  group_by(week) %>%
+  summarise(weekly_attendance = sum(weekly_attendance)) %>%
+    ggplot(aes(x = week, y = weekly_attendance, group = 1)) + 
+      geom_line() +
+      geom_point() +
+      geom_text(aes(label = as.integer(weekly_attendance)),
+                  position = position_dodge(width = 0.9),
+                  vjust = -0.25,
+                  size = 4)
+```
+
+
+# Total Weekly Attendance per Team
+```{r}
+complete_NFL %>%
+  group_by(home_team) %>%
+  summarise(weekly_attendance = sum(weekly_attendance)) %>%
+    ggplot(aes(x = home_team, y = weekly_attendance)) + 
+      geom_col()
+```
+
+
+
+# Does Home Game Affect Winning Performance?
+```{r}
+complete_NFL <- complete_NFL %>%
+                  mutate(home_win = if_else(winner == home_team, 1, 0),
+                         away_win = if_else(winner == away_team, 1, 0))
+```
+
+
+```{r}
+complete_NFL %>%
+  group_by(year, home_team) %>%
+  summarise(home = sum(home_win),
+            away = sum(away_win)) %>%
+  pivot_longer(c("home","away"),
+               names_to = "home_aways",
+               values_to = "win_number") %>%
+  ggplot(aes(x = reorder(home_team, win_number), y = win_number, fill = home_aways)) +
+        geom_bar(position = "dodge", stat = "identity") +
+        geom_text(aes(label = win_number),
+                  position = position_dodge(width = 0.9),
+                  vjust = -0.25,
+                  size = 4) +
+  coord_flip() +
+  xlab("Team") +
+  ylab("Number of Win") +
+  theme(legend.position="bottom", text = element_text(size = 12)) +
+  theme_minimal(base_size = 14)
+```
+
+
+
+```{r}
+complete_NFL %>%
+  group_by(year) %>%
+  summarise(home = sum(home_win),
+            total_games = sum(home_win) + sum(away_win),
+            home_win_pctg = sum(home_win)/total_games)
+```
+
+
+```{r}
+home_away <- complete_NFL %>%
+                group_by(year, home_team) %>%
+                summarise(home = sum(home_win),
+                          away = sum(away_win)) %>%
+                pivot_longer(c("home","away"),
+                             names_to = "home_aways",
+                             values_to = "win_number")
+  
+
+maxs <- home_away %>%
+      group_by(home_team, home_aways) %>%
+      summarise(max_wins = max(win_number))
+
+home_away %>%
+  filter(home_team == "Oakland Raiders") %>%
+
+  ggplot(home_away, aes(x = home_team)) +
+      geom_bar(aes(y = home), position = position_dodge(width = 0.2), stat = "identity", fill = "blue") +
+      geom_bar(aes(y = away), position = position_dodge(width = 0.2), stat = "identity", fill = "red") +
+      #scale_fill_manual(values=c("cyan4", "chocolate4")) +
+      coord_flip() +
+      xlab("Team") +
+      ylab("Number of Win") +
+      theme(legend.position="bottom") +
+      theme_minimal()
+```
+
+```{r}
+glimpse(home_away)
+```
+
+```{r}
+att_team <- attendance %>%
+              group_by(year, full_name) %>%
+              summarise(total = sum(weekly_attendance, na.rm = TRUE))
+```
+```{r}
+ggplot(att_team, aes(x = reorder(full_name, total), y = total)) +
+      geom_bar(position = "dodge", stat = "identity") +
+      #geom_text(aes(label = total),
+      #          position = position_dodge(width = 0.9),
+      #          vjust = -0.5,
+      #          size = 4) +
+      coord_flip() +
+      xlab("Team") +
+      ylab("Number of Attendance") +
+      theme(legend.position="bottom", text = element_text(size = 12)) +
+      theme_minimal(base_size = 14)
+```
+
+
+```{r}
+att_team <- attendance %>%
+              group_by(year, full_name) %>%
+              summarise(total_2 = sum(weekly_attendance, na.rm = TRUE))
+
+glimpse(att_team)
+
+att_team %>%
+  filter(year %in% 2000:2004,
+         full_name == "Dallas Cowboys") %>%
+  
+```
+

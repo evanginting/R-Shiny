@@ -1,0 +1,24 @@
+
+#### Data
+
+The data contain three different datasets, which are attendance, games, and standings. The attendance dataset shows the total attendance of NFL game per week and per team. It is spread over multiple years from 2000 until 2019. The games dataset shows information about weekly games, which provide facts about who's winning the game and the game performances. Finally, the standings dataset cover general information about how many wins, points, and ranks  of every team in multiple seasons. The data can be accessed from [here](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-04).
+
+
+#### Purpose
+
+The purpose of the app is to:
+
+1. give the preliminary information about NFL to the new follower,
+2. show the yearly attendance and break it down into team level, and 
+3. show that NFL is a competitive sports (no dominant team), which shows that play at home does not guarantee a win. It will supported by the comparison of home and away win of every team. 
+
+#### Creator
+
+Evan Ginting (egin0003@student.monash.edu)
+
+<details>
+<summary>Session information</summary>
+```{r, echo = FALSE}
+sessioninfo::session_info()
+```
+</details>
